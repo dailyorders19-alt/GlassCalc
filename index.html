@@ -3,675 +3,273 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Többrétegű Íves Üveg Kalkulátor</title>
-  <meta name="theme-color" content="#0f172a" />
-  <link rel="manifest" href="/manifest.webmanifest" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-title" content="GlassCalc" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>CadDraw</title>
+  <meta name="theme-color" content="#111827" />
+  <meta name="description" content="CadDraw - üvegtervező rajzoló és exportáló alkalmazás" />
 
-
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-
-  <style>
-    * { box-sizing: border-box; }
-
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      max-width: 1250px;
-      margin: auto;
-      background: #f4f6f8;
-      color: #222;
-    }
-
-    h1 { margin-bottom: 10px; }
-
-    button {
-      cursor: pointer;
-      border: none;
-      border-radius: 6px;
-      padding: 10px 14px;
-      margin: 5px 5px 5px 0;
-      background: #1f6feb;
-      color: white;
-      font-weight: bold;
-    }
-
-    button.secondary { background: #555; }
-    button.success { background: #238636; }
-    button.danger { background: #d1242f; }
-
-    .tetel {
-      border: 1px solid #ccc;
-      padding: 15px;
-      margin-top: 20px;
-      border-radius: 10px;
-      background: #fff;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    }
-
-    .client-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: end;
-      margin-bottom: 10px;
-    }
-
-    label {
-      display: block;
-      font-size: 13px;
-      font-weight: bold;
-      margin-top: 5px;
-    }
-
-    input, select {
-      width: 100%;
-      min-width: 90px;
-      padding: 7px;
-      margin-top: 4px;
-      border: 1px solid #bbb;
-      border-radius: 5px;
-      font-size: 14px;
-    }
-
-    .client-row input { min-width: 260px; }
-
-    .table-wrap { overflow-x: auto; }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-      min-width: 1120px;
-    }
-
-    th, td {
-      border: 1px solid #ccc;
-      padding: 6px;
-      text-align: center;
-      vertical-align: top;
-    }
-
-    th {
-      background: #eef2f7;
-      font-size: 13px;
-    }
-
-    .result {
-      margin-top: 14px;
-      background: #eef6ff;
-      border-left: 4px solid #1f6feb;
-      padding: 12px;
-      border-radius: 6px;
-      white-space: pre-wrap;
-      font-family: Consolas, monospace;
-      font-size: 14px;
-      line-height: 1.45;
-    }
-
-    .add-glass-btn {
-      display: block;
-      width: 100%;
-      max-width: 260px;
-      margin-top: 10px;
-      background: #238636;
-    }
-
-    @media print {
-      body { background: white; padding: 0; }
-      button, input, select, table, .client-row label, h1, .add-glass-btn { display: none !important; }
-      .tetel { border: none; box-shadow: none; page-break-after: always; }
-      .result { display: block; border: none; background: white; }
-    }
-  </style>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/x-icon" href="icons/favicon.ico" />
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16x16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png" />
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>Íves Üveg Kalkulátor – több réteg / több tétel</h1>
+  <div class="app">
+    <div class="sidebar">
+      <h1>Üvegtervező</h1>
 
-  <button type="button" onclick="addTetel()">+ Új üvegtétel</button>
-  <button type="button" class="success" onclick="exportToXLSX()">Excel export</button>
-  <button type="button" class="success" onclick="generatePDF()">PDF export</button>
-  <button type="button" class="secondary" onclick="window.print()">Nyomtatás</button>
+      <div class="panel">
+        <h2>Külső forma</h2>
 
-  <form id="formok"></form>
+        <label for="shapeType">Sablon</label>
+        <select id="shapeType">
+          <option value="rectangle">Téglalap</option>
+          <option value="trapezoid">Trapéz</option>
+        </select>
 
-  <script>
-    let positionCounter = 1;
+        <label for="glassThickness">Vastagság (mm)</label>
+        <input type="number" id="glassThickness" min="1" value="8" />
 
-    function addTetel() {
-      const formok = document.getElementById("formok");
-      const div = document.createElement("div");
-      div.className = "tetel";
+        <div id="rectangleFields" class="shape-fields">
+          <label for="rectWidth">Szélesség (mm)</label>
+          <input type="number" id="rectWidth" min="1" value="1000" />
 
-      div.innerHTML = `
-        <div class="client-row">
-          <label>Kliens / cég neve:
-            <input type="text" name="client" oninput="calculateSingle(this.closest('.tetel'))" />
-          </label>
-          <button type="button" class="danger" onclick="this.closest('.tetel').remove()">Tétel törlése</button>
+          <label for="rectHeight">Magasság (mm)</label>
+          <input type="number" id="rectHeight" min="1" value="600" />
         </div>
 
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Pozíció</th>
-                <th>Ívhossz<br>(mm)</th>
-                <th>Az ívhossz melyik rétegé?</th>
-                <th>Sugár<br>(mm)</th>
-                <th>A sugár melyik rétegé?</th>
-                <th>Üvegmagasság<br>(mm)</th>
-                <th>Üvegvastagság<br>(mm)</th>
-                <th>Rétegek közti távolság<br>(mm)</th>
-                <th>Rétegek száma</th>
-                <th>Réteg iránya</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody class="table-body"></tbody>
-          </table>
+        <div id="trapezoidFields" class="shape-fields hidden">
+          <label for="trapMode">Trapéz típusa</label>
+          <select id="trapMode">
+           <option value="normal" selected>Normál trapéz</option>
+           <option value="rightAngle">90°-os trapéz</option>
+           <option value="free">Szabad trapéz</option>
+        </select>
+        <div id="trapNormalFields">
+          <label for="trapTop">Felső oldal (mm)</label>
+          <input type="number" id="trapTop" min="1" value="800" />
+
+          <label for="trapBottom">Alsó oldal (mm)</label>
+          <input type="number" id="trapBottom" min="1" value="1000" />
+
+          <label for="trapHeight">Magasság (mm)</label>
+          <input type="number" id="trapHeight" min="1" value="600" />
+
+          <label for="trapAlign">Igazítás</label>
+          <select id="trapAlign">
+            <option value="left">Balra zárt</option>
+            <option value="center" selected>Középre zárt</option>
+            <option value="right">Jobbra zárt</option>
+          </select>
         </div>
 
-        <button type="button" class="add-glass-btn" onclick="addTableRow(this.closest('.tetel'))">+ Új üveg hozzáadása</button>
+        <div id="trapRightAngleFields" class="hidden">
+          <label for="trapTopRA">Felső oldal (mm)</label>
+          <input type="number" id="trapTopRA" min="1" value="800" />
 
-        <div class="result"></div>
-      `;
+          <label for="trapBottomRA">Alsó oldal (mm)</label>
+          <input type="number" id="trapBottomRA" min="1" value="1000" />
 
-      formok.appendChild(div);
-      addTableRow(div);
-    }
+          <label for="trapLeft">Bal oldal (mm)</label>
+          <input type="number" id="trapLeft" min="1" value="600" />
 
-    function addTableRow(div) {
-      const tbody = div.querySelector(".table-body");
-      const tr = document.createElement("tr");
+          <label for="trapRight">Jobb oldal (mm)</label>
+          <input type="number" id="trapRight" min="1" value="632" />
 
-      const lastRow = tbody.querySelector("tr:last-child");
-
-      let prevHeight = "";
-      let prevThickness = 6;
-      let prevGap = 0.76;
-      let prevLayers = 3;
-      let prevDirection = "inward";
-
-      if (lastRow) {
-        prevHeight = getValue(lastRow, "height") || "";
-        prevThickness = getValue(lastRow, "thickness") || 6;
-        prevGap = getValue(lastRow, "gap") || 0.76;
-        prevLayers = getValue(lastRow, "layers") || 3;
-        prevDirection = getValue(lastRow, "direction") || "inward";
-      }
-
-      tr.innerHTML = `
-        <td><input type="number" name="position" value="${positionCounter++}" oninput="calculateSingle(this.closest('.tetel'))" /></td>
-
-        <td><input type="number" name="arcInput" step="0.01" oninput="calculateSingle(this.closest('.tetel'))" /></td>
-
-        <td>
-          <select name="arcLayer" onchange="calculateSingle(this.closest('.tetel'))">
-            <option value="0">1. réteg / külső</option>
-            <option value="1">2. réteg / középső</option>
-            <option value="2">3. réteg / belső</option>
+          <label for="trapRightAngleSide">90°-os oldal</label>
+          <select id="trapRightAngleSide">
+            <option value="left" selected>Bal oldal</option>
+            <option value="right">Jobb oldal</option>
           </select>
-        </td>
+        </div>
 
-        <td><input type="number" name="radiusInput" step="0.01" oninput="calculateSingle(this.closest('.tetel'))" /></td>
+      <div id="trapFreeFields" class="hidden">
+        <label for="trapFreeTop">Felső oldal (mm)</label>
+        <input type="number" id="trapFreeTop" min="1" value="800" />
 
-        <td>
-          <select name="radiusLayer" onchange="calculateSingle(this.closest('.tetel'))">
-            <option value="0">1. réteg / külső</option>
-            <option value="1">2. réteg / középső</option>
-            <option value="2">3. réteg / belső</option>
+        <label for="trapFreeBottom">Alsó oldal (mm)</label>
+        <input type="number" id="trapFreeBottom" min="1" value="1000" />
+
+        <label for="trapFreeLeft">Bal oldal (mm)</label>
+        <input type="number" id="trapFreeLeft" min="1" value="650" />
+
+        <label for="trapFreeRight">Jobb oldal (mm)</label>
+        <input type="number" id="trapFreeRight" min="1" value="650" />
+
+        <label for="trapFreeAlign">Szabad trapéz döntése</label>
+        <select id="trapFreeAlign">
+          <option value="auto" selected>Automatikus</option>
+          <option value="left">Balra döntött</option>
+          <option value="center">Középre igazított</option>
+          <option value="right">Jobbra döntött</option>
+        </select>
+      </div>
+        
+    </div> 
+
+        <button id="drawBtn">Frissítés</button>
+      </div>
+
+      <div class="panel">
+        <h2>Furatok</h2>
+
+        <label for="holeX">X (mm)</label>
+        <input type="number" id="holeX" min="0" value="150" />
+
+        <label for="holeY">Y (mm)</label>
+        <input type="number" id="holeY" min="0" value="150" />
+
+        <label for="holeD">Átmérő (mm)</label>
+        <input type="number" id="holeD" min="1" value="30" />
+
+        <button id="addHoleBtn">Furat hozzáadása</button>
+
+        <div id="holeList" class="list"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Kivágások</h2>
+
+        <label for="cutoutType">Kivágás típusa</label>
+        <select id="cutoutType">
+          <option value="rectangle">Téglalap</option>
+          <option value="lcorner">L alakú sarokkivágás</option>
+          <option value="ucutout">U alakú élkivágás</option>
+        </select>
+
+        <div id="rectCutoutFields">
+  <label for="cutoutRectMode">Megadási mód</label>
+  <select id="cutoutRectMode">
+    <option value="size" selected>X + Y + szélesség + magasság</option>
+    <option value="edgeOffsets">Széltávolságokból</option>
+    <option value="reference">Referencia méretekből (CAD)</option>
+  </select>
+
+  <div id="cutoutRectSizeFields">
+  <label for="cutoutX">X (mm)</label>
+  <input type="number" id="cutoutX" min="0" value="300" />
+
+  <label for="cutoutY">Y (mm)</label>
+  <input type="number" id="cutoutY" min="0" value="100" />
+
+  <label for="cutoutW">Szélesség (mm)</label>
+  <input type="number" id="cutoutW" min="1" value="120" />
+
+  <label for="cutoutH">Magasság (mm)</label>
+  <input type="number" id="cutoutH" min="1" value="80" />
+</div>
+
+  <div id="cutoutRectEdgeFields" class="hidden">
+    <label for="cutoutLeftGap">Bal szél → kivágás bal széle (mm)</label>
+    <input type="number" id="cutoutLeftGap" min="0" value="300" />
+
+    <label for="cutoutRightGap">Jobb szél → kivágás jobb széle (mm)</label>
+    <input type="number" id="cutoutRightGap" min="0" value="580" />
+
+    <label for="cutoutBottomGap">Alsó szél → kivágás alsó széle (mm)</label>
+    <input type="number" id="cutoutBottomGap" min="0" value="100" />
+
+    <label for="cutoutTopGap">Felső szél → kivágás felső széle (mm)</label>
+    <input type="number" id="cutoutTopGap" min="0" value="420" />
+  </div>
+  
+  <div id="cutoutRectReferenceFields" class="hidden">
+    <label>Bal szél → kivágás bal (mm)</label>
+    <input type="number" id="cutoutRefLeft" value="110" />
+
+    <label>Bal szél → kivágás jobb (mm)</label>
+    <input type="number" id="cutoutRefRight" value="292" />
+
+    <label>Alsó szél → kivágás alsó (mm)</label>
+    <input type="number" id="cutoutRefBottom" value="243" />
+
+    <label>Alsó szél → kivágás felső (mm)</label>
+    <input type="number" id="cutoutRefTop" value="308" />
+  </div>
+
+  <label for="cutoutR">Sarok sugár (mm)</label>
+  <input type="number" id="cutoutR" min="0" value="0" />
+</div>
+
+        <div id="lCutoutFields" class="hidden">
+          <label for="lCutoutW">Szélesség (mm)</label>
+          <input type="number" id="lCutoutW" min="1" value="120" />
+
+          <label for="lCutoutH">Magasság (mm)</label>
+          <input type="number" id="lCutoutH" min="1" value="80" />
+
+          <label for="lInnerR">Belső sugár (mm)</label>
+          <input type="number" id="lInnerR" min="0" value="10" />
+
+          <label for="lCorner">Sarok helye</label>
+          <select id="lCorner">
+            <option value="topRight" selected>Jobb felső</option>
+            <option value="topLeft">Bal felső</option>
+            <option value="bottomRight">Jobb alsó</option>
+            <option value="bottomLeft">Bal alsó</option>
           </select>
-        </td>
-
-        <td><input type="number" name="height" value="${prevHeight}" step="1" oninput="calculateSingle(this.closest('.tetel'))" /></td>
-        <td><input type="number" name="thickness" value="${prevThickness}" step="0.01" oninput="calculateSingle(this.closest('.tetel'))" /></td>
-        <td><input type="number" name="gap" value="${prevGap}" step="0.01" oninput="calculateSingle(this.closest('.tetel'))" /></td>
-        <td><input type="number" name="layers" value="${prevLayers}" oninput="calculateSingle(this.closest('.tetel'))" /></td>
-        <td>
-          <select name="direction" onchange="calculateSingle(this.closest('.tetel'))">
-            <option value="inward" ${prevDirection === "inward" ? "selected" : ""}>Befelé / rétegek csökkennek</option>
-            <option value="outward" ${prevDirection === "outward" ? "selected" : ""}>Kifelé / rétegek nőnek</option>
-          </select>
-        </td>
-
-        <td><button type="button" class="danger" onclick="this.closest('tr').remove(); calculateSingle(this.closest('.tetel'))">X</button></td>
-      `;
-
-      tbody.appendChild(tr);
-      setupEnterNavigation(tr, div);
-      calculateSingle(div);
-      return tr;
-    }
-
-    function setupEnterNavigation(tr, div) {
-      const inputs = tr.querySelectorAll("input, select");
-      inputs.forEach((el, i) => {
-        el.addEventListener("keydown", e => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            if (i + 1 < inputs.length) {
-              inputs[i + 1].focus();
-            } else {
-              const newRow = addTableRow(div);
-              const firstInput = newRow.querySelector("input, select");
-              if (firstInput) firstInput.focus();
-            }
-          }
-        });
-      });
-    }
-
-    function getValue(row, name) {
-      const el = row.querySelector(`[name='${name}']`);
-      return el ? el.value : "";
-    }
-
-    function calculateRow(row) {
-      const pos = getValue(row, "position") || "-";
-      const arcInput = parseFloat(getValue(row, "arcInput"));
-      const radiusInput = parseFloat(getValue(row, "radiusInput"));
-      const height = parseFloat(getValue(row, "height"));
-      const thickness = parseFloat(getValue(row, "thickness"));
-      const gap = parseFloat(getValue(row, "gap"));
-      const layers = parseInt(getValue(row, "layers"));
-      const arcLayer = parseInt(getValue(row, "arcLayer"));
-      const radiusLayer = parseInt(getValue(row, "radiusLayer"));
-      const direction = getValue(row, "direction");
-
-      if (isNaN(arcInput) || isNaN(radiusInput) || isNaN(thickness) || isNaN(gap) || isNaN(layers) || layers < 1) {
-        return { valid: false, pos, message: "Hiányzó adat. Add meg az ívhosszt és a sugarat." };
-      }
-
-      const step = thickness + gap;
-
-      const layerOuterRadii = [];
-
-      for (let i = 0; i < layers; i++) {
-        let r;
-
-        if (direction === "inward") {
-          r = radiusInput - (i - radiusLayer) * step;
-        } else {
-          r = radiusInput + (i - radiusLayer) * step;
-      }
-
-      layerOuterRadii.push(r);
-    }
-
-    const arcReferenceRadius = layerOuterRadii[arcLayer];
-
-    if (!arcReferenceRadius || arcReferenceRadius <= 0) {
-      return { valid: false, pos, message: "Hiba: az ívhossz rétegéhez tartozó sugár nem érvényes." };
-    }
-
-    const angleRad = arcInput / arcReferenceRadius;
-    const angleDeg = angleRad * 180 / Math.PI;
-
-    const items = [];
-
-    for (let i = 0; i < layers; i++) {
-      const outerR = layerOuterRadii[i];
-      const cuttingR = outerR - thickness / 2;
-      const outerArcLength = outerR * angleRad;
-      const cuttingArcLength = cuttingR * angleRad;
-      const chord = 2 * outerR * Math.sin(angleRad / 2);
-      const rise = outerR * (1 - Math.cos(angleRad / 2));
-
-      items.push({
-        layerNo: i + 1,
-        height: isNaN(height) ? "" : height,
-        outerR,
-        cuttingR,
-        cuttingArcLength,
-        outerArcLength,
-        chord,
-        rise
-      });
-    }
-
-    return { valid: true, pos, angleDeg, items };
-  }
-
-    function calculateSingle(div) {
-      const client = div.querySelector("input[name='client']").value || "-";
-      const rows = div.querySelectorAll("tbody tr");
-      let resultText = `Kliens: ${client}\n`;
-
-      rows.forEach(row => {
-        const calc = calculateRow(row);
-
-        if (!calc.valid) {
-          resultText += `\nPozíció: ${calc.pos}\n${calc.message}\n`;
-          return;
-        }
-
-        resultText += `\nPozíció: ${calc.pos}\n`;
-        resultText += `Közös szög: ${calc.angleDeg.toFixed(4)}°\n`;
-
-        calc.items.forEach(item => {
-          resultText += `\n${item.layerNo}. réteg`;
-          resultText += `\n  Magasság: ${item.height === "" ? "-" : item.height + " mm"}`;
-          resultText += `\n  Külső sugár: ${item.outerR.toFixed(2)} mm`;
-          resultText += `\n  Vágási sugár / középvonal: ${item.cuttingR.toFixed(2)} mm`;
-          resultText += `\n  Vágási ívhossz: ${item.cuttingArcLength.toFixed(2)} mm`;
-          resultText += `\n  Külső ívhossz: ${item.outerArcLength.toFixed(2)} mm`;
-          resultText += `\n  Részletek: Húrhossz ${item.chord.toFixed(2)} mm | Ívmagasság ${item.rise.toFixed(2)} mm\n`;
-        });
-      });
-
-      div.querySelector(".result").innerText = resultText.trim();
-    }
-
-    function collectExportRows() {
-      const exportRows = [];
-
-      document.querySelectorAll(".tetel").forEach(div => {
-        const client = div.querySelector("input[name='client']").value || "-";
-        const rows = div.querySelectorAll("tbody tr");
-
-        const grouped = {};
-
-        rows.forEach(row => {
-          const calc = calculateRow(row);
-          if (!calc.valid) return;
-
-          calc.items.forEach(item => {
-            const radius = Number(item.outerR.toFixed(0));
-
-            if (!grouped[radius]) {
-              grouped[radius] = [];
-            }
-
-            grouped[radius].push(calc.pos);
-          });
-        });
-
-        exportRows.push({ type: "client", client });
-        exportRows.push({ type: "header", values: ["Pozíciók", "Sugár (mm)"] });
-
-        Object.keys(grouped).forEach(radius => {
-          exportRows.push({
-            type: "data",
-            values: [grouped[radius].join(", "), radius]
-          });
-        });
-
-        exportRows.push({ type: "blank" });
-      });
-
-      return exportRows;
-    }
-
-    function exportToXLSX() {
-      const wb = XLSX.utils.book_new();
-
-      const sheetData = [];
-      const groupByRadius = {};
-      const importSheetData = [];
-      let hasData = false;
-      let clientName = "-";
-      let importCounter = 1;
-
-    document.querySelectorAll(".tetel").forEach(div => {
-      const client = div.querySelector("input[name='client']").value || "-";
-      clientName = client;
-
-      const rows = div.querySelectorAll("tbody tr");
-
-      sheetData.push([`Kliens: ${client}`]);
-      sheetData.push([]);
-
-      rows.forEach(row => {
-        const calc = calculateRow(row);
-        if (!calc.valid) return;
-
-        hasData = true;
-
-      // =========================
-      // 1. SHEET - MINT A PDF
-      // =========================
-      sheetData.push([`Pozíció: ${calc.pos}`]);
-      sheetData.push(["Üveg", "Méret (mm)", "Sugár (mm)", "Külső ívhossz (mm)"]);
-
-      calc.items.forEach(item => {
-        sheetData.push([
-          `Üveg ${item.layerNo}`,
-          item.height === "" ? "" : `${item.height} x ${item.cuttingArcLength.toFixed(0)}`,
-          Number(item.outerR.toFixed(0)),
-          Number(item.outerArcLength.toFixed(0))
-        ]);
-      });
-
-      sheetData.push([]);
-
-      // =========================
-      // 2. SHEETHEZ ADATGYŰJTÉS
-      // csak első üveg sugara alapján
-      // =========================
-      const firstItem = calc.items[0];
-
-      if (firstItem) {
-        const radius = Number(firstItem.outerR.toFixed(0));
-
-        if (!groupByRadius[radius]) {
-          groupByRadius[radius] = [];
-        }
-
-        groupByRadius[radius].push(calc.pos);
-      }
-
-      // =========================
-      // 3. SHEET - IMPORT ADATOK
-      // eredeti méretekkel, nem vágási méretekkel
-      // =========================
-      const originalBase = Number(parseFloat(getValue(row, "arcInput")).toFixed(0));
-      const originalHeight = Number(parseFloat(getValue(row, "height")).toFixed(0));
-      const quantity = parseInt(getValue(row, "layers")) || 1;
-
-      importSheetData.push([
-        `N${importCounter}=`,
-        String(quantity),
-        String(originalBase),
-        String(originalHeight),
-        client,
-        String(calc.pos),
-
-        "FOL 0.76X2200", // Family
-        "5",             // Grinding
-        "0",             // Standard
-        "0",             // Priority
-        "0",             // NoRotation
-        "0",             // Tolerance
-        "0",             // NoPrint
-        "-1",            // NLabels
-        "",              // Description
-        "",              // Note1
-        "",              // Note2
-        "",              // Note3
-        String(importCounter), // Code
-        "",              // Works
-        "",              // Zone
-        "1",             // Inversion
-        "0",             // TwinGroup
-        "",              // Yard
-        "MOLATURA",      // Dept
-        "",              // U
-        "",              // dB
-        "",              // OriginalProject
-        "",              // OriginalCode
-        "0",             // LowERemoval
-        "",              // Category
-        "",              // RackOrdering
-        "",              // SpacerReduction
-        "",              // ShippingInversion
-        "",              // ManualPieces
-        "",              // RackInfo
-        "",              // RackParameters
-        "",              // IDPiece
-        "",              // ComponentDescription
-        ""               // HarpClass
-      ]);
-
-      importCounter++;
-
-    });
-  });
-
-  if (!hasData) {
-    alert("Nincs exportálható adat. Add meg az ívhosszt és a sugarat.");
-    return;
-  }
-
-  // =========================
-  // 1. SHEET LÉTREHOZÁSA
-  // =========================
-  const ws1 = XLSX.utils.aoa_to_sheet(sheetData);
-
-  ws1["!cols"] = [
-    { wch: 18 },
-    { wch: 18 },
-    { wch: 16 },
-    { wch: 22 }
-  ];
-
-  XLSX.utils.book_append_sheet(wb, ws1, "Reszletes lista");
-
-  // =========================
-  // 2. SHEET - SUGÁR CSOPORTOSÍTÁS
-  // =========================
-  const groupSheetData = [];
-
-  groupSheetData.push([clientName]);
-  groupSheetData.push([]);
-  groupSheetData.push(["Pozíciók", "Sugár"]);
-
-  Object.keys(groupByRadius)
-    .sort((a, b) => Number(a) - Number(b))
-    .forEach(radius => {
-      groupSheetData.push([
-        groupByRadius[radius].join(", "),
-        Number(radius)
-      ]);
-    });
-
-  const ws2 = XLSX.utils.aoa_to_sheet(groupSheetData);
-
-  ws2["!cols"] = [
-    { wch: 35 },
-    { wch: 16 }
-  ];
-
-  XLSX.utils.book_append_sheet(wb, ws2, "Sugar csoportositas");
-
-  // =========================
-  // 3. SHEET - IMPORT
-  // =========================
-  const importHeaders = [
-    "(PIECES)", "Quantity", "Base", "Height", "Customer", "Order",
-    "Family", "Grinding", "Standard", "Priority", "NoRotation",
-    "Tolerance", "NoPrint", "NLabels", "Description", "Note1",
-    "Note2", "Note3", "Code", "Works", "Zone", "Inversion",
-    "TwinGroup", "Yard", "Dept", "U", "dB", "OriginalProject",
-    "OriginalCode", "LowERemoval", "Category", "RackOrdering",
-    "SpacerReduction", "ShippingInversion", "ManualPieces",
-    "RackInfo", "RackParameters", "IDPiece",
-    "ComponentDescription", "HarpClass"
-  ];
-
-  const ws3 = XLSX.utils.aoa_to_sheet([
-    importHeaders,
-    ...importSheetData
-  ]);
-
-  ws3["!cols"] = importHeaders.map(() => ({ wch: 16 }));
-
-  XLSX.utils.book_append_sheet(wb, ws3, "IMPORT");
-
-  XLSX.writeFile(wb, "ives_uveg_export.xls", {
-    bookType: "biff8"
-  });
-}
-
-    function generatePDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-
-      let y = 12;
-      doc.setFontSize(15);
-      doc.text("Íves üveg gyártási lista", 14, y);
-      y += 8;
-
-      let hasData = false;
-
-     document.querySelectorAll(".tetel").forEach(div => {
-       const client = div.querySelector("input[name='client']").value || "-";
-       const rows = div.querySelectorAll("tbody tr");
-
-       doc.setFontSize(12);
-       doc.text(`Kliens: ${client}`, 14, y);
-       y += 8;
-
-       rows.forEach(row => {
-         const calc = calculateRow(row);
-         if (!calc.valid) return;
-         hasData = true;
-
-         if (y > 245) {
-           doc.addPage();
-           y = 12;
-         }
-
-         doc.setFontSize(12);
-         doc.text(`Pozíció: ${calc.pos}`, 14, y);
-         y += 3;
-
-          const tableBody = calc.items.map(item => [
-            `Üveg ${item.layerNo}`,
-            item.height === "" ? "" : `${item.height} x ${item.cuttingArcLength.toFixed(0)}`,
-            item.outerR.toFixed(0),
-            item.outerArcLength.toFixed(0)
-          ]);
-
-          doc.autoTable({
-            startY: y,
-            head: [["Uveg", "Meret (mm)", "Sugar (mm)", "Kulso ivhossz (mm)"]],
-            body: tableBody,
-            theme: "grid",
-            styles: { fontSize: 9, cellPadding: 2 },
-            headStyles: { fillColor: [230, 230, 230], textColor: [0, 0, 0] },
-            margin: { left: 14, right: 14 }
-          });
-
-          y = doc.lastAutoTable.finalY + 10;
-        });
-      });
-
-      if (!hasData) {
-        alert("Nincs exportálható adat. Add meg az ívhosszt és a sugarat.");
-        return;
-      }
-
-      doc.save("ives_uveg_export.pdf");
-    }
-
-    window.onload = function() {
-      addTetel();
-    };
-  </script>
-
+        </div>
+
+ <div id="uCutoutFields" class="hidden">
+  <label for="uSide">Oldal</label>
+  <select id="uSide">
+    <option value="bottom" selected>Alsó oldal</option>
+    <option value="top">Felső oldal</option>
+    <option value="left">Bal oldal</option>
+    <option value="right">Jobb oldal</option>
+  </select>
+
+  <label for="uOffset">Kezdő távolság az oldalon (mm)</label>
+  <input type="number" id="uOffset" min="0" value="200" />
+
+  <label for="uWidth">Nyílás / belső oldal szélesség (mm)</label>
+  <input type="number" id="uWidth" min="1" value="120" />
+
+  <label for="uDepth">Mélység (mm)</label>
+  <input type="number" id="uDepth" min="1" value="80" />
+
+  <label for="uRadius">Két belső sarok közös R sugara (mm)</label>
+  <input type="number" id="uRadius" min="0" value="10" />
+</div>       
+
+        <button id="addCutoutBtn">Kivágás hozzáadása</button>
+
+        <div id="cutoutList" class="list"></div>
+      </div>
+      <div class="panel">
+        <h2>Ráhagyás</h2>
+
+        <label for="holeAllowance">Furat ráhagyás (mm)</label>
+        <input type="number" id="holeAllowance" step="0.1" value="1" />
+
+        <label for="cutoutAllowance">Kivágás ráhagyás oldalanként (mm)</label>
+        <input type="number" id="cutoutAllowance" step="0.1" value="0.5" />
+      </div>
+      
+      <div class="panel">
+        <h2>Export</h2>
+        <button id="exportPdfBtn">PDF export</button>
+        <button id="exportDxfBtn">DXF export</button>
+      </div>
+
+      <div class="panel">
+        <h2>Információ</h2>
+        <div id="statusBox" class="status ok">Kész.</div>
+      </div>
+    </div>
+
+    <div class="workspace">
+      <canvas id="glassCanvas" width="1000" height="700"></canvas>
+    </div>
+  </div>
+
+  <script src="vendor/jspdf.umd.min.js"></script>
+  <script src="app.js"></script>
   <script>
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
-        navigator.serviceWorker.register("/service-worker.js").catch(console.error);
+        navigator.serviceWorker.register("/sw.js").catch(console.error);
       });
     }
   </script>
