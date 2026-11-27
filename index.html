@@ -126,10 +126,20 @@
     }
 
     @media print {
-      body { background: white; padding: 0; }
+      body { background: white; padding: 0; color: #000; }
       button, input, select, table, .client-row label, h1, .add-glass-btn { display: none !important; }
       .tetel { border: none; box-shadow: none; page-break-after: always; }
-      .result { display: block; border: none; background: white; }
+      .result {
+        display: block;
+        border: none;
+        background: white;
+        color: #000 !important;
+        font-weight: 700;
+        font-size: 15px;
+        line-height: 1.5;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
     }
   </style>
 </head>
@@ -138,6 +148,8 @@
 
   <button type="button" onclick="addTetel()">+ Új üvegtétel</button>
   <button type="button" class="success" onclick="exportToXLSX()">Excel export</button>
+  <button type="button" class="success" onclick="document.getElementById('excelImportInput').click()">Excel import</button>
+  <input id="excelImportInput" type="file" accept=".xls,.xlsx" style="display:none" onchange="importFromXLSX(this.files[0]); this.value=''" />
   <button type="button" class="success" onclick="generatePDF()">PDF export</button>
   <button type="button" class="secondary" onclick="window.print()">Nyomtatás</button>
 
@@ -163,7 +175,7 @@
           <table>
             <thead>
               <tr>
-                <th>Pozíció</th>
+                <th>Pozíció</th><th>Darabszám</th>
                 <th>Ívhossz<br>(mm)</th>
                 <th>Az ívhossz melyik rétegé?</th>
                 <th>Sugár<br>(mm)</th>
@@ -210,7 +222,7 @@
       }
 
       tr.innerHTML = `
-        <td><input type="number" name="position" value="${positionCounter++}" oninput="calculateSingle(this.closest('.tetel'))" /></td>
+        <td><input type="text" name="position" value="${positionCounter++}" oninput="calculateSingle(this.closest('.tetel'))" /></td><td><input type="number" name="quantity" min="1" step="1" value="1" oninput="calculateSingle(this.closest('.tetel'))" /></td>
 
         <td><input type="number" name="arcInput" step="0.01" oninput="calculateSingle(this.closest('.tetel'))" /></td>
 
@@ -263,7 +275,7 @@
             } else {
               const newRow = addTableRow(div);
               const firstInput = newRow.querySelector("input, select");
-              if (firstInput) firstInput.focus();
+              if (firstInput) { firstInput.focus(); firstInput.select(); }
             }
           }
         });
@@ -285,7 +297,7 @@
       const layers = parseInt(getValue(row, "layers"));
       const arcLayer = parseInt(getValue(row, "arcLayer"));
       const radiusLayer = parseInt(getValue(row, "radiusLayer"));
-      const direction = getValue(row, "direction");
+      const direction = getValue(row, "direction"); const quantity = Number(getValue(row, "quantity")); if (!Number.isSafeInteger(quantity) || quantity < 1) return { valid: false, pos, message: "Érvénytelen darabszám." };
 
       if (isNaN(arcInput) || isNaN(radiusInput) || isNaN(thickness) || isNaN(gap) || isNaN(layers) || layers < 1) {
         return { valid: false, pos, message: "Hiányzó adat. Add meg az ívhosszt és a sugarat." };
@@ -338,7 +350,7 @@
       });
     }
 
-    return { valid: true, pos, angleDeg, items };
+    return { valid: true, pos, angleDeg, items, quantity };
   }
 
     function calculateSingle(div) {
@@ -354,7 +366,7 @@
           return;
         }
 
-        resultText += `\nPozíció: ${calc.pos}\n`;
+        resultText += `\nPozíció: ${calc.pos} | Darabszám: ${calc.quantity} db\n`;
         resultText += `Közös szög: ${calc.angleDeg.toFixed(4)}°\n`;
 
         calc.items.forEach(item => {
@@ -417,11 +429,12 @@
       const sheetData = [];
       const groupByRadius = {};
       const importSheetData = [];
+      const glassCalcData = [];
       let hasData = false;
       let clientName = "-";
       let importCounter = 1;
 
-    document.querySelectorAll(".tetel").forEach(div => {
+    document.querySelectorAll(".tetel").forEach((div, tetelIndex) => {
       const client = div.querySelector("input[name='client']").value || "-";
       clientName = client;
 
@@ -440,11 +453,11 @@
       // 1. SHEET - MINT A PDF
       // =========================
       sheetData.push([`Pozíció: ${calc.pos}`]);
-      sheetData.push(["Üveg", "Méret (mm)", "Sugár (mm)", "Külső ívhossz (mm)"]);
+      sheetData.push(["Üveg", "Darab", "Méret (mm)", "Sugár (mm)", "Külső ívhossz (mm)"]);
 
       calc.items.forEach(item => {
         sheetData.push([
-          `Üveg ${item.layerNo}`,
+          `Üveg ${item.layerNo}`, calc.quantity,
           item.height === "" ? "" : `${item.height} x ${item.cuttingArcLength.toFixed(0)}`,
           Number(item.outerR.toFixed(0)),
           Number(item.outerArcLength.toFixed(0))
@@ -466,7 +479,7 @@
           groupByRadius[radius] = [];
         }
 
-        groupByRadius[radius].push(calc.pos);
+        groupByRadius[radius].push(calc.quantity > 1 ? `${calc.pos} (${calc.quantity} db)` : calc.pos);
       }
 
       // =========================
@@ -475,7 +488,24 @@
       // =========================
       const originalBase = Number(parseFloat(getValue(row, "arcInput")).toFixed(0));
       const originalHeight = Number(parseFloat(getValue(row, "height")).toFixed(0));
-      const quantity = parseInt(getValue(row, "layers")) || 1;
+      const quantity = calc.items.length * calc.quantity;
+
+      // A GlassCalc saját visszaimportjához az eredeti beviteli mezők.
+      // Ez nem változtatja meg a meglévő exportlapok tartalmát.
+      glassCalcData.push([
+        tetelIndex + 1,
+        client,
+        getValue(row, "position"),
+        getValue(row, "arcInput"),
+        getValue(row, "arcLayer"),
+        getValue(row, "radiusInput"),
+        getValue(row, "radiusLayer"),
+        getValue(row, "height"),
+        getValue(row, "thickness"),
+        getValue(row, "gap"),
+        getValue(row, "layers"),
+        getValue(row, "direction"), calc.quantity
+      ]);
 
       importSheetData.push([
         `N${importCounter}=`,
@@ -596,14 +626,117 @@
 
   XLSX.utils.book_append_sheet(wb, ws3, "IMPORT");
 
+  // =========================
+  // 4. SHEET - GLASSCALC VISSZAIMPORT
+  // =========================
+  const glassCalcHeaders = [
+    "Tetel", "Client", "Position", "ArcInput", "ArcLayer", "RadiusInput",
+    "RadiusLayer", "Height", "Thickness", "Gap", "Layers", "Direction", "Quantity"
+  ];
+
+  const ws4 = XLSX.utils.aoa_to_sheet([
+    glassCalcHeaders,
+    ...glassCalcData
+  ]);
+
+  ws4["!cols"] = glassCalcHeaders.map(() => ({ wch: 16 }));
+  XLSX.utils.book_append_sheet(wb, ws4, "GlassCalc adat");
+
   XLSX.writeFile(wb, "ives_uveg_export.xls", {
     bookType: "biff8"
   });
 }
 
+    function setRowValue(row, name, value) {
+      const el = row.querySelector(`[name='${name}']`);
+      if (!el) return;
+      el.value = value == null ? "" : String(value);
+    }
+
+    function importFromXLSX(file) {
+      if (!file) return;
+
+      const reader = new FileReader();
+
+      reader.onload = function(event) {
+        try {
+          const data = new Uint8Array(event.target.result);
+          const wb = XLSX.read(data, { type: "array" });
+          const ws = wb.Sheets["GlassCalc adat"];
+
+          if (!ws) {
+            alert("Ez az Excel fájl nem tartalmaz GlassCalc visszaimportálási adatokat. Teljes visszatöltéshez az alkalmazás új Excel exportjával készült fájl szükséges.");
+            return;
+          }
+
+          const rows = XLSX.utils.sheet_to_json(ws, { defval: "" });
+          if (!rows.length) {
+            alert("Az Excel fájlban nincs visszaimportálható GlassCalc adat.");
+            return;
+          }
+
+          const groups = new Map();
+          rows.forEach(item => {
+            const key = String(item.Tetel || "1");
+            if (!groups.has(key)) groups.set(key, []);
+            groups.get(key).push(item);
+          });
+
+          const formok = document.getElementById("formok");
+          formok.innerHTML = "";
+          positionCounter = 1;
+          let maxPosition = 0;
+
+          groups.forEach(items => {
+            addTetel();
+            const div = formok.lastElementChild;
+            const tbody = div.querySelector(".table-body");
+            tbody.innerHTML = "";
+
+            div.querySelector("input[name='client']").value = items[0].Client || "";
+
+            items.forEach(item => {
+              addTableRow(div);
+              const row = tbody.lastElementChild;
+
+              setRowValue(row, "position", item.Position);
+              setRowValue(row, "arcInput", item.ArcInput);
+              setRowValue(row, "arcLayer", item.ArcLayer);
+              setRowValue(row, "radiusInput", item.RadiusInput);
+              setRowValue(row, "radiusLayer", item.RadiusLayer);
+              setRowValue(row, "height", item.Height);
+              setRowValue(row, "thickness", item.Thickness);
+              setRowValue(row, "gap", item.Gap);
+              setRowValue(row, "layers", item.Layers);
+              setRowValue(row, "direction", item.Direction || "inward"); setRowValue(row, "quantity", item.Quantity === undefined || item.Quantity === "" ? 1 : item.Quantity);
+
+              const p = parseInt(item.Position, 10);
+              if (!isNaN(p)) maxPosition = Math.max(maxPosition, p);
+            });
+
+            calculateSingle(div);
+          });
+
+          positionCounter = Math.max(positionCounter, maxPosition + 1);
+          alert("Excel import kész.");
+        } catch (error) {
+          console.error(error);
+          alert("Az Excel fájl beolvasása nem sikerült.");
+        }
+      };
+
+      reader.onerror = function() {
+        alert("Az Excel fájl beolvasása nem sikerült.");
+      };
+
+      reader.readAsArrayBuffer(file);
+    }
+
     function generatePDF() {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+       doc.setTextColor(0, 0, 0);
+       doc.setFont("helvetica", "bold");
 
       let y = 12;
       doc.setFontSize(15);
@@ -635,7 +768,7 @@
          y += 3;
 
           const tableBody = calc.items.map(item => [
-            `Üveg ${item.layerNo}`,
+            `Üveg ${item.layerNo}`, calc.quantity,
             item.height === "" ? "" : `${item.height} x ${item.cuttingArcLength.toFixed(0)}`,
             item.outerR.toFixed(0),
             item.outerArcLength.toFixed(0)
@@ -643,11 +776,11 @@
 
           doc.autoTable({
             startY: y,
-            head: [["Uveg", "Meret (mm)", "Sugar (mm)", "Kulso ivhossz (mm)"]],
+            head: [["Uveg", "Darab", "Meret (mm)", "Sugar (mm)", "Kulso ivhossz (mm)"]],
             body: tableBody,
             theme: "grid",
-            styles: { fontSize: 9, cellPadding: 2 },
-            headStyles: { fillColor: [230, 230, 230], textColor: [0, 0, 0] },
+            styles: { fontSize: 9, cellPadding: 2, fontStyle: "bold", textColor: [0, 0, 0], lineColor: [60, 60, 60], lineWidth: 0.2 },
+            headStyles: { fillColor: [230, 230, 230], textColor: [0, 0, 0], fontStyle: "bold" },
             margin: { left: 14, right: 14 }
           });
 

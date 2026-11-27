@@ -1,4 +1,4 @@
-const CACHE_NAME = "glasscalc-pwa-20260507-v1";
+const CACHE_NAME = "glasscalc-pwa-20261127-v3";
 const APP_SHELL = [
   "/",
   "/index.html",
